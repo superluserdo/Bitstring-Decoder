@@ -11,7 +11,7 @@ unsigned char linebuf[32];
 char masks_first[9];
 char masks_last[9];
 
-int is_LE() {
+int is_LE(void) {
 	/* Test if this PC is little-endian */
 	union bits64 testint = {.integer = 1};
 	if (testint.bytes[0] == 1) {
@@ -29,8 +29,11 @@ long int make_native_int(struct bits64_len data) {
 	}
 }
 
-//void masks_init(char *masks_first, char *masks_last) {
-void masks_init() {
+void decoder_init(void) {
+	masks_init();
+}
+
+void masks_init(void) {
 	char mask_first = 0;
 	char mask_last = 0;
 	masks_first[0] = mask_first;

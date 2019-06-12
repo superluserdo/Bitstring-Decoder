@@ -24,11 +24,13 @@ struct pos_len_s {
 	enum endian_e endianness;
 };
 
-int is_LE();
+int is_LE(void);
 
 long int make_native_int(struct bits64_len data);
 
-void masks_init();
+void decoder_init(void);
+
+void masks_init(void);
 
 int byte_first_n_bits(unsigned char byte, int n, enum align_e alignment);
 
@@ -37,6 +39,8 @@ int byte_bit_range(unsigned char byte, int n_start, int n_end, enum align_e alig
 struct bits64_len chars_to_long(unsigned char *bytes, int n_bytes, int start_bits, int end_bits, enum endian_e endianness, int offset);
 
 struct bits64_len bits_to_long(unsigned char *bytes, int bitstart, int bitlen, enum endian_e endianness);
+
+struct bits64_len decode_pos(unsigned char *bytes, struct pos_len_s pos_len);
 
 void decode_line(unsigned char *bytes, struct bits64_len line_data[], struct pos_len_s fields_pos_len[], int num_fields);
 
