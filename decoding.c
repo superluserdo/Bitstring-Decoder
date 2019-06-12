@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 #include <math.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -195,4 +196,47 @@ void write_line(struct bits64_len line_data[], int num_fields) {
 		fprintf(stdout, "%ld, ", make_native_int(line_data[i]));
 	}
 	fprintf(stdout, "\n");
+}
+
+unsigned char hex_to_nibble(char c) {
+	if (c >= '0' && c <= '9') {
+		return c - '0';
+	} else if (c >= 'A' && c <= 'F') {
+		return c - 'A' + 10;
+	} else if (c >= 'a' && c <= 'f') {
+		return c - 'a' + 10;
+	} else {
+		fprintf(stdout, "Malformed garbage-checker string\n");
+		abort();
+	}
+}
+
+void decoder_hex2bytes(const char *hexstring, unsigned char *bytestring, int *len_bytestring) {
+	int charlen = strlen(hexstring);
+	if (charlen%2) {
+		/* Failure. We need an even number of
+ 		   chars as there are 2 to a byte.
+		*/
+		fprintf(stdout, "Malformed garbage-checker string\n");
+		abort();
+	}
+	*len_bytestring = charlen/2;
+	for (int i = 0; i < *len_bytestring; i++) {
+		bytestring[i] = hex_to_nibble(hexstring[2*i]) << 4;
+		bytestring[i] += hex_to_nibble(hexstring[2*i+1]);
+	}
+		
+}
+
+int decoder_linestartswith(unsigned char *linebuf, int len_linebuf, unsigned char *bytestring, int len_bytestring) {
+	int match = 1;
+	int num_bytes = len_linebuf > len_bytestring ? len_bytestring : len_linebuf;
+	for (int i = 0; i < num_bytes; i++) {
+		if (linebuf[i] != bytestring[i]) {
+			match = 0;
+			break;
+		}
+	}
+
+	return match;
 }

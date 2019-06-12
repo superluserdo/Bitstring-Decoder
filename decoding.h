@@ -45,3 +45,6 @@ struct bits64_len decode_pos(unsigned char *bytes, struct pos_len_s pos_len);
 void decode_line(unsigned char *bytes, struct bits64_len line_data[], struct pos_len_s fields_pos_len[], int num_fields);
 
 void write_line(struct bits64_len line_data[], int num_fields);
+
+void decoder_hex2bytes(const char *hexstring, unsigned char *bytestring, int *len_bytestring);
+int decoder_linestartswith(unsigned char *linebuf, int len_linebuf, unsigned char *bytestring, int len_bytestring);
