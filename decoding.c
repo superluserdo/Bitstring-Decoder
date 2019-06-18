@@ -182,10 +182,12 @@ struct bits64_len decode_pos(unsigned char *bytes, struct pos_len_s pos_len) {
 }
 	
 
-void decode_line(unsigned char *bytes, struct bits64_len line_data[], struct pos_len_s fields_pos_len[], int num_fields) {
+void decode_line(unsigned char *bytes, struct bits64_len line_data[], struct pos_len_s fields_pos_len[], int num_fields, int offset_bits) {
 
 	for (int i = 0; i < num_fields; i++) {
-		line_data[i] = decode_pos(bytes, fields_pos_len[i]);
+		struct pos_len_s pos_len = fields_pos_len[i];
+		pos_len.pos += offset_bits;
+		line_data[i] = decode_pos(bytes, pos_len);
 	}
 }
 

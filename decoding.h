@@ -42,7 +42,7 @@ struct bits64_len bits_to_long(unsigned char *bytes, int bitstart, int bitlen, e
 
 struct bits64_len decode_pos(unsigned char *bytes, struct pos_len_s pos_len);
 
-void decode_line(unsigned char *bytes, struct bits64_len line_data[], struct pos_len_s fields_pos_len[], int num_fields);
+void decode_line(unsigned char *bytes, struct bits64_len line_data[], struct pos_len_s fields_pos_len[], int num_fields, int offset_bits);
 
 void write_line(struct bits64_len line_data[], int num_fields);
 
