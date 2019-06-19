@@ -40,7 +40,7 @@ struct bits64_len chars_to_long(unsigned char *bytes, int n_bytes, int start_bit
 
 struct bits64_len bits_to_long(unsigned char *bytes, int bitstart, int bitlen, enum endian_e endianness);
 
-struct bits64_len decode_pos(unsigned char *bytes, struct pos_len_s pos_len);
+struct bits64_len decode_pos(unsigned char *bytes, struct pos_len_s pos_len, int offset_bits);
 
 void decode_line(unsigned char *bytes, struct bits64_len line_data[], struct pos_len_s fields_pos_len[], int num_fields, int offset_bits);
 
