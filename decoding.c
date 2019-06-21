@@ -7,8 +7,6 @@
 #include <byteswap.h>
 #include "decoding.h"
 
-unsigned char linebuf[32];
-
 char masks_first[9];
 char masks_last[9];
 
@@ -110,6 +108,94 @@ struct bits64_len chars_to_long(unsigned char *bytes, int n_bytes, int start_bit
 	return result;
 }
 
+int bits_src_to_dst(unsigned char *bytes_src, int bitstart_src, int bitlen_src, enum endian_e endianness_src,
+		unsigned char *bytes_dst, int bitstart_dst, int bitlen_dst, enum endian_e endianness_dst) {
+
+	int bitlen_diff = bitlen_src - bitlen_dst;
+	if (bitlen_diff > 0) {
+		/* Truncate src to get only least significant (last) bits */
+		bitlen_src = bitlen_dst;
+		bitstart_src += bitlen_diff;
+	}
+
+	int bytes_len_src = 1 + ((bitstart_src+bitlen_src-1)/8 - bitstart_src/8);
+
+	int firstbyte_src = bitstart_src / 8; /* First byte with an occupied src bit */
+	int lastbyte_src = (bitstart_src + bitlen_src - 1) / 8; /* Final byte with an occupied src bit */
+
+	int firstbyte_dst = bitstart_dst / 8;
+	int lastbyte_dst = (bitstart_dst + bitlen_dst - 1) / 8;
+
+	int endbyte_offset_src = (bitstart_src + bitlen_src) % 8;
+	int startbyte_offset_src = bitstart_src % 8;
+
+	int byte_leastsig_src;
+	int more_sig_dir_src;
+	int leastsigbyte_offset_src;
+
+	int byte_leastsig_dst;
+	int more_sig_dir_dst;
+	int leastsigbyte_offset_dst;
+	int shiftleft_byteoffset = 0;
+
+	if (endianness_src == BE) {
+		byte_leastsig_src = lastbyte_src;
+		leastsigbyte_offset_src = endbyte_offset_src;
+		more_sig_dir_src = -1; /* Left */
+	} else {
+		byte_leastsig_src = firstbyte_src;	
+		leastsigbyte_offset_src = startbyte_offset_src;
+		more_sig_dir_src = 1; /* Right */
+	}
+
+	if (endianness_dst == BE) {
+		byte_leastsig_dst = lastbyte_dst;
+		leastsigbyte_offset_dst = (bitstart_dst + bitlen_dst) % 8;
+		more_sig_dir_dst = -1; /* Left */
+	} else {
+		byte_leastsig_dst = firstbyte_dst;	
+		leastsigbyte_offset_dst = bitstart_dst % 8;
+		more_sig_dir_dst = 1; /* Right */
+	}
+
+	int offset_bits_diff = leastsigbyte_offset_dst - leastsigbyte_offset_src;
+	if (offset_bits_diff < 0) {
+		offset_bits_diff += 8;
+		if (endianness_dst != BE && leastsigbyte_offset_dst != 0) {
+			shiftleft_byteoffset = 1; /* Shift left */
+		}
+	}
+
+	int nbyte_src = byte_leastsig_src;
+	int nbyte_dst = byte_leastsig_dst;
+	int bytes_written = 0;
+	//for (int byte = firstbyte_src; byte <= lastbyte_src; byte++) {
+	for (int i = 0; i < bytes_len_src; i++) {
+		/* Shift and copy the correct bytes over from least to most significant */
+		unsigned char byte = bytes_src[nbyte_src];
+		if (nbyte_src == firstbyte_src) {
+			byte = byte_last_n_bits(byte, 8-startbyte_offset_src, RIGHT);
+		}
+		if (nbyte_src == lastbyte_src && endbyte_offset_src > 0) {
+			byte = byte_first_n_bits(byte, endbyte_offset_src, LEFT);
+		}
+		unsigned char byte_rightshift = byte >> offset_bits_diff;
+		unsigned char byte_leftshift = byte << (8 - offset_bits_diff);
+		if (i + shiftleft_byteoffset >= 0 && byte_leftshift) {
+			bytes_dst[nbyte_dst - shiftleft_byteoffset + 1] += byte_leftshift;
+			bytes_written = i;
+		}
+		if (i + shiftleft_byteoffset < bytes_len_src && byte_rightshift) {
+			bytes_dst[nbyte_dst - shiftleft_byteoffset] += byte_rightshift;
+			bytes_written = i + shiftleft_byteoffset;
+		}
+
+		nbyte_src += more_sig_dir_src;
+		nbyte_dst += more_sig_dir_dst;
+	}
+	return bytes_written;
+}
+
 struct bits64_len bits_to_long(unsigned char *bytes, int bitstart, int bitlen, enum endian_e endianness) {
 	int bitend = bitstart + bitlen; //Exclusive end of bits
 
@@ -179,7 +265,14 @@ struct bits64_len bits_to_long(unsigned char *bytes, int bitstart, int bitlen, e
 		
 struct bits64_len decode_pos(unsigned char *bytes, struct pos_len_s pos_len, int offset_bits) {
 	pos_len.pos += offset_bits;
-	return bits_to_long(bytes, pos_len.pos, pos_len.len, pos_len.endianness);
+
+	//struct bits64_len result_old = bits_to_long(bytes, pos_len.pos, pos_len.len, pos_len.endianness);
+	struct bits64_len result = {.integer = 0, .endianness = pos_len.endianness};
+	int bytes_written = bits_src_to_dst(bytes, pos_len.pos, pos_len.len, pos_len.endianness,
+			result.bytes, 0, 64, pos_len.endianness);
+	result.len_bytes = bytes_written;
+
+	return result;
 }
 	
 
