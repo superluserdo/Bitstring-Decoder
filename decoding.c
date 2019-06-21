@@ -115,7 +115,9 @@ int bits_src_to_dst(unsigned char *bytes_src, int bitstart_src, int bitlen_src, 
 	if (bitlen_diff > 0) {
 		/* Truncate src to get only least significant (last) bits */
 		bitlen_src = bitlen_dst;
-		bitstart_src += bitlen_diff;
+		if (endianness_src == BE) {
+			bitstart_src += bitlen_diff;
+		}
 	}
 
 	int bytes_len_src = 1 + ((bitstart_src+bitlen_src-1)/8 - bitstart_src/8);
@@ -159,11 +161,17 @@ int bits_src_to_dst(unsigned char *bytes_src, int bitstart_src, int bitlen_src, 
 	}
 
 	int offset_bits_diff = leastsigbyte_offset_dst - leastsigbyte_offset_src;
+	int byte_offset_dst = 0;
+
 	if (offset_bits_diff < 0) {
 		offset_bits_diff += 8;
-		if (endianness_dst != BE && leastsigbyte_offset_dst != 0) {
-			shiftleft_byteoffset = 1; /* Shift left */
-		}
+		shiftleft_byteoffset = 1; /* Shift left */
+	}
+	if (leastsigbyte_offset_src == 0 && endianness_src == BE) {
+		byte_offset_dst--;
+	}
+	if (leastsigbyte_offset_dst == 0 && endianness_dst == BE) {
+		byte_offset_dst++;
 	}
 
 	int nbyte_src = byte_leastsig_src;
@@ -181,12 +189,12 @@ int bits_src_to_dst(unsigned char *bytes_src, int bitstart_src, int bitlen_src, 
 		}
 		unsigned char byte_rightshift = byte >> offset_bits_diff;
 		unsigned char byte_leftshift = byte << (8 - offset_bits_diff);
-		if (i + shiftleft_byteoffset >= 0 && byte_leftshift) {
-			bytes_dst[nbyte_dst - shiftleft_byteoffset + 1] += byte_leftshift;
+		if (byte_leftshift) {
+			bytes_dst[nbyte_dst - shiftleft_byteoffset + 1 + byte_offset_dst] += byte_leftshift;
 			bytes_written = i;
 		}
-		if (i + shiftleft_byteoffset < bytes_len_src && byte_rightshift) {
-			bytes_dst[nbyte_dst - shiftleft_byteoffset] += byte_rightshift;
+		if (byte_rightshift) {
+			bytes_dst[nbyte_dst - shiftleft_byteoffset + byte_offset_dst] += byte_rightshift;
 			bytes_written = i + shiftleft_byteoffset;
 		}
 
