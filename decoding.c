@@ -10,18 +10,19 @@
 char masks_first[9];
 char masks_last[9];
 
-int is_LE(void) {
-	/* Test if this PC is little-endian */
+enum endian_e get_endianness(void) {
+	/* Return this PC's endianness */
 	union bits64 testint = {.integer = 1};
 	if (testint.bytes[0] == 1) {
-		return 1;
+		return LE;
 	} else {
-		return 0;
+		return BE;
 	}
 }
 
-long int make_native_int(struct bits64_len data) {
-	if ((data.endianness == LE) != is_LE()) {
+uint64_t make_native_int(struct bits64_len data) {
+	//if ((data.endianness == LE) != is_LE()) {
+	if (data.endianness != get_endianness()) {
 		return bswap_64(data.integer);
 	} else {
 		return data.integer;
@@ -77,6 +78,7 @@ int byte_bit_range(unsigned char byte, int n_start, int n_end, enum align_e alig
 }
 
 struct bits64_len chars_to_long(unsigned char *bytes, int n_bytes, int start_bits, int end_bits, enum endian_e endianness, int offset) {
+	/* DEPRECATED */
 	assert(n_bytes * 8 + end_bits <= 64); //Make sure end result < 64 bits
 	int empty_bytes = 8 - n_bytes;
 
@@ -177,7 +179,6 @@ int bits_src_to_dst(unsigned char *bytes_src, int bitstart_src, int bitlen_src, 
 	int nbyte_src = byte_leastsig_src;
 	int nbyte_dst = byte_leastsig_dst;
 	int bytes_written = 0;
-	//for (int byte = firstbyte_src; byte <= lastbyte_src; byte++) {
 	for (int i = 0; i < bytes_len_src; i++) {
 		/* Shift and copy the correct bytes over from least to most significant */
 		unsigned char byte = bytes_src[nbyte_src];
@@ -205,6 +206,7 @@ int bits_src_to_dst(unsigned char *bytes_src, int bitstart_src, int bitlen_src, 
 }
 
 struct bits64_len bits_to_long(unsigned char *bytes, int bitstart, int bitlen, enum endian_e endianness) {
+	/* DEPRECATED */
 	int bitend = bitstart + bitlen; //Exclusive end of bits
 
 	int startbyte = bitstart/8;

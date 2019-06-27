@@ -24,9 +24,9 @@ struct pos_len_s {
 	enum endian_e endianness;
 };
 
-int is_LE(void);
+enum endian_e get_endianness(void);
 
-long int make_native_int(struct bits64_len data);
+uint64_t make_native_int(struct bits64_len data);
 
 void decoder_init(void);
 
